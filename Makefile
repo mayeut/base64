@@ -25,6 +25,25 @@ HAVE_AVX    = 0
 HAVE_FAST_UNALIGNED_ACCESS = 0
 
 # The user should supply compiler flags for the codecs they want to build.
+# First, special case for known flags. Requires only one variable to be set.
+ifdef AUTO_CFLAGS
+  ifneq (, $(findstring $(AUTO_CFLAGS), gcc-avx2))
+    AVX2_CFLAGS ?= -mavx2
+  endif
+  ifneq (, $(findstring $(AUTO_CFLAGS), gcc-avx2 gcc-avx))
+    AVX_CFLAGS ?= -mavx
+  endif
+  ifneq (, $(findstring $(AUTO_CFLAGS), gcc-avx2 gcc-avx gcc-sse42))
+    SSE42_CFLAGS ?= -msse4.2
+  endif
+  ifneq (, $(findstring $(AUTO_CFLAGS), gcc-avx2 gcc-avx gcc-sse42 gcc-sse41))
+    SSE41_CFLAGS ?= -msse4.1
+  endif
+  ifneq (, $(findstring $(AUTO_CFLAGS), gcc-avx2 gcc-avx gcc-sse42 gcc-sse41 gcc-ssse3))
+    SSSE3_CFLAGS ?= -mssse3
+  endif
+endif
+
 # Check which codecs we're going to include:
 ifdef AVX2_CFLAGS
   HAVE_AVX2 = 1
