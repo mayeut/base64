@@ -45,7 +45,7 @@
 #define BASE64_DEC16_FUNCTION(arch)		\
 	int					\
 	base64_stream_decode16_ ## arch		\
-	BASE64_DEC_PARAMS
+	BASE64_DEC16_PARAMS
 
 // Function signature for decoding functions:
 #define BASE64_CVT_FUNCTION(arch)	\
