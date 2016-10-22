@@ -6,7 +6,7 @@
 while (srclen >= 45)
 {
 	// Load string:
-	__m256i str = _mm256_loadu_si256((__m256i *)c);
+	__m256i str = LOAD_STRING(c);
 
 	// The input consists of six character sets in the Base64 alphabet,
 	// which we need to map back to the 6-bit values they represent.

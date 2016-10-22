@@ -111,6 +111,8 @@ enc_translate (uint8x16x4_t in)
 	return out;
 }
 
+#include "../generic/convert.c"
+
 #endif
 
 // Stride size is so large on these NEON 32-bit functions
@@ -138,5 +140,15 @@ BASE64_DEC_FUNCTION(neon32)
 	#include "../generic/dec_tail.c"
 #else
 	BASE64_DEC_STUB
+#endif
+}
+
+
+BASE64_CVT_FUNCTION(neon32)
+{
+#if (defined(__arm__) && defined(__ARM_NEON__))
+	#include "../generic/convert_loop.c"
+#else
+	BASE64_CVT_STUB
 #endif
 }

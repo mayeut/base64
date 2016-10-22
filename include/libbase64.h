@@ -1,6 +1,8 @@
 #ifndef _LIBBASE64_H
 #define _LIBBASE64_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -80,6 +82,14 @@ int base64_decode
 	, int			 flags
 	) ;
 
+int base64_decode16
+	( const uint16_t	*src
+	, size_t			 srclen
+	, char				*out
+	, size_t			*outlen
+	, int				 flags
+	) ;
+
 /* Call this before calling base64_stream_decode() to init the state. See above
  * for `flags`; set to 0 for default operation: */
 void base64_stream_decode_init
@@ -101,6 +111,14 @@ int base64_stream_decode
 	, size_t		 srclen
 	, char			*out
 	, size_t		*outlen
+	) ;
+
+int base64_stream_decode16
+	( struct base64_state	*state
+	, const uint16_t		*src
+	, size_t				 srclen
+	, char					*out
+	, size_t				*outlen
 	) ;
 
 #ifdef __cplusplus

@@ -57,6 +57,32 @@ assert_dec (int flags, const char *src, const char *dst)
 	return false;
 }
 
+static bool
+assert_dec16 (int flags, const char *src, const char *src16, const char *dst)
+{
+	size_t srclen = strlen(src);
+	size_t dstlen = strlen(dst);
+
+	if (!base64_decode16((const uint16_t*)src16, srclen, out, &outlen, flags)) {
+		printf("FAIL: decoding of '%s': decoding error\n", src);
+		return true;
+	}
+	if (outlen != dstlen) {
+		printf("FAIL: encoding of '%s': "
+					 "length expected %lu, got %lu\n", src,
+					 (unsigned long)dstlen,
+					 (unsigned long)outlen
+					 );
+		return true;
+	}
+	if (strncmp(dst, out, outlen) != 0) {
+		out[outlen] = '\0';
+		printf("FAIL: decoding of '%s': expected output '%s', got '%s'\n", src, dst, out);
+		return true;
+	}
+	return false;
+}
+
 static int
 assert_roundtrip (int flags, const char *src)
 {
@@ -292,21 +318,49 @@ test_one_codec (const char *codec, int flags)
 	struct {
 		const char *in;
 		const char *out;
+		const char *out16;
 	} vec[] = {
 
 		// These are the test vectors from RFC4648:
-		{ "",		""         },
-		{ "f",		"Zg=="     },
-		{ "fo",		"Zm8="     },
-		{ "foo",	"Zm9v"     },
-		{ "foob",	"Zm9vYg==" },
-		{ "fooba",	"Zm9vYmE=" },
-		{ "foobar",	"Zm9vYmFy" },
+		{ "",		""        , "\0" },
+		{ "f",		"Zg=="    , "Z\0g\0=\0=\0" },
+		{ "fo",		"Zm8="    , "Z\0m\0""8\0=\0" },
+		{ "foo",	"Zm9v"    , "Z\0m\0""9\0v\0" },
+		{ "foob",	"Zm9vYg==", "Z\0m\0""9\0v\0Y\0g\0=\0=\0" },
+		{ "fooba",	"Zm9vYmE=", "Z\0m\0""9\0v\0Y\0m\0E\0=\0" },
+		{ "foobar",	"Zm9vYmFy", "Z\0m\0""9\0v\0Y\0m\0F\0y\0" },
 
 		// The first paragraph from Moby Dick,
 		// to test the SIMD codecs with larger blocksize:
-		{ moby_dick_plain, moby_dick_base64 },
+		{ moby_dick_plain, moby_dick_base64, moby_dick_base64_16u },
 	};
+
+#if 0
+	size_t c = 0;
+	const char * pSrc = moby_dick_base64;
+	putc('\t', stdout);
+	putc('\"', stdout);
+	while (*pSrc) {
+		int character = *pSrc++;
+		putc(character, stdout);
+		putc('\\', stdout);
+		putc('0', stdout);
+		putc('\"', stdout);
+		putc('\"', stdout);
+
+		c++;
+		if (c == 24U) {
+			putc('\"', stdout);
+			putc('\n', stdout);
+			putc('\t', stdout);
+			putc('\"', stdout);
+
+			c = 0U;
+		}
+	}
+	putc('\"', stdout);
+	putc('\n', stdout);
+#endif
 
 	for (size_t i = 0; i < sizeof(vec) / sizeof(vec[0]); i++) {
 
@@ -315,6 +369,7 @@ test_one_codec (const char *codec, int flags)
 
 		// Decode the output string, check if we get the input:
 		fail |= assert_dec(flags, vec[i].out, vec[i].in);
+		fail |= assert_dec16(flags, vec[i].out, vec[i].out16, vec[i].in);
 
 		// Do a roundtrip on the inputs and the outputs:
 		fail |= assert_roundtrip(flags, vec[i].in);

@@ -41,6 +41,9 @@ static const char *base64_table_enc_transposed =
 	"Oeu+"
 	"Pfv/"
 };
+
+#include "../generic/convert.c"
+
 #endif
 
 // Stride size is so large on these NEON 64-bit functions
@@ -71,5 +74,14 @@ BASE64_DEC_FUNCTION(neon64)
 	#include "../generic/dec_tail.c"
 #else
 	BASE64_DEC_STUB
+#endif
+}
+
+BASE64_CVT_FUNCTION(neon64)
+{
+#if (defined(__aarch64__) && defined(__ARM_NEON__))
+	#include "../generic/convert_loop.c"
+#else
+	BASE64_CVT_STUB
 #endif
 }

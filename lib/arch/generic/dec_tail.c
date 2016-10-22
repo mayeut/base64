@@ -2,7 +2,7 @@
 			ret = 1;
 			break;
 		}
-		if ((q = base64_table_dec[*c++]) >= 254) {
+		if ((q = base64_table_dec[CHAR_CONVERT(*c++)]) >= 254) {
 			st.eof = BASE64_EOF;
 			// Treat character '=' as invalid for byte 0:
 			break;
@@ -14,7 +14,7 @@
 			ret = 1;
 			break;
 		}
-		if ((q = base64_table_dec[*c++]) >= 254) {
+		if ((q = base64_table_dec[CHAR_CONVERT(*c++)]) >= 254) {
 			st.eof = BASE64_EOF;
 			// Treat character '=' as invalid for byte 1:
 			break;
@@ -28,14 +28,14 @@
 			ret = 1;
 			break;
 		}
-		if ((q = base64_table_dec[*c++]) >= 254) {
+		if ((q = base64_table_dec[CHAR_CONVERT(*c++)]) >= 254) {
 			// When q == 254, the input char is '='.
 			// Check if next byte is also '=':
 			if (q == 254) {
 				if (srclen-- != 0) {
 					// EOF:
 					st.eof = BASE64_EOF;
-					ret = (base64_table_dec[*c++] == 254) ? 1 : 0;
+					ret = (base64_table_dec[CHAR_CONVERT(*c++)] == 254) ? 1 : 0;
 					break;
 				}
 				else {
@@ -58,7 +58,7 @@
 			ret = 1;
 			break;
 		}
-		if ((q = base64_table_dec[*c++]) >= 254) {
+		if ((q = base64_table_dec[CHAR_CONVERT(*c++)]) >= 254) {
 			st.eof = BASE64_EOF;
 			// When q == 254, the input char is '='. Return 1 and EOF.
 			// When q == 255, the input char is invalid. Return 0 and EOF.

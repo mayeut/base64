@@ -24,8 +24,10 @@
 struct buffers {
 	char *reg;
 	char *enc;
+	uint16_t *enc16;
 	size_t regsz;
 	size_t encsz;
+	bool   enc16ready;
 };
 
 // Define buffer sizes to test with:
@@ -36,11 +38,11 @@ static struct bufsize {
 	int	 batch;
 }
 sizes[] = {
-	{ "10 MB",	MB * 10,	10,	1	},
-	{ "1 MB",	MB * 1,		10,	10	},
-	{ "100 KB",	KB * 100,	10,	100	},
-	{ "10 KB",	KB * 10,	100,	100	},
-	{ "1 KB",	KB * 1,		100,	1000	},
+	{ "10 MB",	MB * 10,	100,	1	},
+	{ "1 MB",	MB * 1,		100,	10	},
+	{ "100 KB",	KB * 100,	100,	100	},
+	{ "10 KB",	KB * 10,	1000,	100	},
+	{ "1 KB",	KB * 1,		1000,	1000	},
 };
 
 static inline float
@@ -134,7 +136,7 @@ codec_bench_enc (struct buffers *b, const struct bufsize *bs, const char *name, 
 			fastest = timediff;
 	}
 
-	printf("%s\tencode\t%.02f MB/sec\n", name, bytes_to_mb(b->regsz) / fastest);
+	//printf("%-6s encode   %8.2f MB/sec\n", name, bytes_to_mb(b->regsz) / fastest);
 }
 
 static void
@@ -163,14 +165,56 @@ codec_bench_dec (struct buffers *b, const struct bufsize *bs, const char *name, 
 			fastest = timediff;
 	}
 
-	printf("%s\tdecode\t%.02f MB/sec\n", name, bytes_to_mb(b->encsz) / fastest);
+	printf("%-6s decode   %8.2f MB/sec\n", name, bytes_to_mb(b->encsz) / fastest);
+}
+
+static void
+codec_bench_dec16 (struct buffers *b, const struct bufsize *bs, const char *name, unsigned int flags)
+{
+	float timediff, fastest = -1.0f;
+	base64_timespec start, end;
+
+	// Reset buffer size:
+	b->encsz = bs->len;
+
+	// Repeat benchmark a number of times for a fair test:
+	for (int i = bs->repeat; i; i--) {
+
+		// Timing loop, use batches to increase timer resolution:
+		base64_gettime(&start);
+		for (int j = bs->batch; j; j--)
+			base64_decode16(b->enc16, b->encsz, b->reg, &b->regsz, flags);
+		base64_gettime(&end);
+
+		// Calculate average time of batch:
+		timediff = timediff_sec(&start, &end) / bs->batch;
+
+		// Update fastest time seen:
+		if (fastest < 0.0f || timediff < fastest)
+			fastest = timediff;
+	}
+
+	printf("%-6s decode16 %8.2f MB/sec\n", name, bytes_to_mb(b->encsz) / fastest);
+}
+
+static void
+codec_bench_prepare_enc16 (struct buffers *b)
+{
+	for (size_t i = 0U; i < b->encsz; ++i) {
+		b->enc16[i] = (uint8_t)b->enc[i];
+	}
 }
 
 static void
 codec_bench (struct buffers *b, const struct bufsize *bs, const char *name, unsigned int flags)
 {
 	codec_bench_enc(b, bs, name, flags);
+	if (!b->enc16ready) {
+		codec_bench_prepare_enc16(b);
+		b->enc16ready = true;
+	}
 	codec_bench_dec(b, bs, name, flags);
+	codec_bench_dec16(b, bs, name, flags);
 }
 
 int
@@ -183,6 +227,7 @@ main ()
 	// Set buffer sizes to largest buffer length:
 	b.regsz = sizes[0].len;
 	b.encsz = sizes[0].len * 5 / 3;
+	b.enc16ready = false;
 
 	// Allocate space for megabytes of random data:
 	if ((b.reg = malloc(b.regsz)) == NULL) {
@@ -198,10 +243,17 @@ main ()
 		goto err1;
 	}
 
+	// Allocate space for UTF-16 encoded output:
+	if ((b.enc16 = malloc(b.encsz * sizeof(uint16_t))) == NULL) {
+		errmsg = "Out of memory";
+		ret = 1;
+		goto err2;
+	}
+
 	// Fill buffer with random data:
 	if (get_random_data(&b, &errmsg) == false) {
 		ret = 1;
-		goto err2;
+		goto err3;
 	}
 
 	// Loop over all buffer sizes:
@@ -216,6 +268,7 @@ main ()
 	};
 
 	// Free memory:
+err3: free(b.enc16);
 err2:	free(b.enc);
 err1:	free(b.reg);
 err0:	if (errmsg)

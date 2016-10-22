@@ -130,6 +130,8 @@ dec_reshuffle (__m256i in)
 		0, 1, 2, 4, 5, 6, -1, -1));
 }
 
+#include "../generic/convert.c"
+
 #endif	// __AVX2__
 
 BASE64_ENC_FUNCTION(avx2)
@@ -143,6 +145,9 @@ BASE64_ENC_FUNCTION(avx2)
 #endif
 }
 
+#define STRING_TYPE uint8_t
+#define CHAR_CONVERT(x) (x)
+#define LOAD_STRING(c) _mm256_loadu_si256((__m256i *)c)
 BASE64_DEC_FUNCTION(avx2)
 {
 #ifdef __AVX2__
@@ -151,5 +156,35 @@ BASE64_DEC_FUNCTION(avx2)
 	#include "../generic/dec_tail.c"
 #else
 	BASE64_DEC_STUB
+#endif
+}
+#undef LOAD_STRING
+#undef CHAR_CONVERT
+#undef STRING_TYPE
+
+#define STRING_TYPE uint16_t
+#define CHAR_CONVERT(x) convert(x)
+#define LOAD_STRING(c) _mm256_permute4x64_epi64(_mm256_packus_epi16( _mm256_loadu_si256((__m256i *)(c+0)),_mm256_loadu_si256((__m256i *)(c+16))), 0xD8)
+BASE64_DEC16_FUNCTION(avx2)
+{
+#ifdef __AVX2__
+#include "../generic/dec_head.c"
+#include "dec_loop.c"
+#include "../generic/dec_tail.c"
+#else
+	BASE64_DEC_STUB
+#endif
+}
+#undef LOAD_STRING
+#undef CHAR_CONVERT
+#undef STRING_TYPE
+
+BASE64_CVT_FUNCTION(avx2)
+{
+#ifdef __AVX2__
+	#include "../sse2/convert_loop.c"
+	#include "../generic/convert_loop.c"
+#else
+	BASE64_CVT_STUB
 #endif
 }

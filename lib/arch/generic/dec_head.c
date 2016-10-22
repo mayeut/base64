@@ -1,5 +1,5 @@
 int ret = 0;
-const uint8_t *c = (const uint8_t *)src;
+const STRING_TYPE *c = (const STRING_TYPE *)src;
 uint8_t *o = (uint8_t *)out;
 uint8_t q;
 
@@ -17,7 +17,7 @@ if (st.eof) {
 	// If there was a trailing '=' to check, check it:
 	if (srclen && (st.eof == BASE64_AEOF)) {
 		st.eof = BASE64_EOF;
-		ret = (base64_table_dec[*c++] == 254) ? 1 : 0;
+		ret = (base64_table_dec[CHAR_CONVERT(*c++)] == 254) ? 1 : 0;
 	}
 	return ret;
 }

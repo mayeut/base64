@@ -15,6 +15,8 @@
 #include "../ssse3/enc_translate.c"
 #include "../sse41/enc_reshuffle.c"
 
+#include "../generic/convert.c"
+
 #endif	// __SSE4_2__
 
 BASE64_ENC_FUNCTION(sse42)
@@ -28,6 +30,9 @@ BASE64_ENC_FUNCTION(sse42)
 #endif
 }
 
+#define STRING_TYPE uint8_t
+#define CHAR_CONVERT(x) (x)
+#define LOAD_STRING(c) LOAD_STRING8(c)
 BASE64_DEC_FUNCTION(sse42)
 {
 #ifdef __SSE4_2__
@@ -36,5 +41,35 @@ BASE64_DEC_FUNCTION(sse42)
 	#include "../generic/dec_tail.c"
 #else
 	BASE64_DEC_STUB
+#endif
+}
+#undef LOAD_STRING
+#undef CHAR_CONVERT
+#undef STRING_TYPE
+
+#define STRING_TYPE uint16_t
+#define CHAR_CONVERT(x) convert(x)
+#define LOAD_STRING(c) LOAD_STRING16(c)
+BASE64_DEC16_FUNCTION(sse42)
+{
+#ifdef __SSE4_2__
+#include "../generic/dec_head.c"
+#include "dec_loop.c"
+#include "../generic/dec_tail.c"
+#else
+	BASE64_DEC_STUB
+#endif
+}
+#undef LOAD_STRING
+#undef CHAR_CONVERT
+#undef STRING_TYPE
+
+BASE64_CVT_FUNCTION(sse42)
+{
+#ifdef __SSE4_2__
+	#include "../sse2/convert_loop.c"
+	#include "../generic/convert_loop.c"
+#else
+	BASE64_CVT_STUB
 #endif
 }

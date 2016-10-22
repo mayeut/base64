@@ -2,3 +2,5 @@
 #define CMPEQ(s,n)	_mm_cmpeq_epi8((s), _mm_set1_epi8(n))
 #define REPLACE(s,n)	_mm_and_si128((s), _mm_set1_epi8(n))
 #define RANGE(s,a,b)	_mm_andnot_si128(CMPGT((s), (b)), CMPGT((s), (a) - 1))
+#define LOAD_STRING8(c) _mm_loadu_si128((__m128i *)c)
+#define LOAD_STRING16(c) _mm_packus_epi16(_mm_loadu_si128((__m128i *)(c + 0)), _mm_loadu_si128((__m128i *)(c + 8)))

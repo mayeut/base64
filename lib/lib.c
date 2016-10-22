@@ -120,6 +120,44 @@ base64_stream_decode
 	return codec.dec(state, src, srclen, out, outlen);
 }
 
+int
+base64_stream_decode16
+	( struct base64_state	*state
+	, const uint16_t		*src
+	, size_t				 srclen
+	, char					*out
+	, size_t				*outlen
+	)
+{
+	int ret = 1;
+	size_t asciilen = (srclen > (4U * 1024U)) ? (4U * 1024U) : srclen;
+	char ascii[asciilen] __attribute__((aligned(64)));
+	size_t outl = 0U;
+
+	if (0 && codec.dec16) {
+		return codec.dec16(state, src, srclen, out, outlen);
+	}
+
+	while (ret && (asciilen < srclen))
+	{
+		size_t outlenround = 0U;
+		codec.cvt(src, ascii, asciilen);
+		ret = codec.dec(state, ascii, asciilen, out, &outlenround);
+		src += asciilen;
+		srclen -= asciilen;
+		out += outlenround;
+		outl += outlenround;
+	}
+	if (ret) {
+		size_t outlenround = 0U;
+		codec.cvt(src, ascii, srclen);
+		ret = codec.dec(state, ascii, srclen, out, &outlenround);
+		outl += outlenround;
+	}
+	*outlen = outl;
+	return ret;
+}
+
 #ifdef _OPENMP
 
 	// Due to the overhead of initializing OpenMP and creating a team of
@@ -186,3 +224,21 @@ base64_decode
 	// Feed the whole string to the stream reader:
 	return base64_stream_decode(&state, src, srclen, out, outlen);
 }
+
+int base64_decode16
+ ( const uint16_t	*src
+ , size_t			 srclen
+ , char				*out
+ , size_t			*outlen
+ , int				 flags
+ )
+{
+	struct base64_state state;
+
+	// Init the stream reader:
+	base64_stream_decode_init(&state, flags);
+
+	// Feed the whole string to the stream reader:
+	return base64_stream_decode16(&state, src, srclen, out, outlen);
+}
+

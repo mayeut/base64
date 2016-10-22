@@ -15,6 +15,20 @@
 	, char			*out		\
 	, size_t		*outlen		\
 	)
+#define BASE64_DEC16_PARAMS		\
+	( struct base64_state	*state	\
+	, const uint16_t	*src		\
+	, size_t		 srclen		\
+	, char			*out		\
+	, size_t		*outlen		\
+	)
+
+// Function parameters for conversion functions:
+#define BASE64_CVT_PARAMS		\
+	( const uint16_t	*src	\
+	, char				*dst	\
+	, size_t			 len	\
+	)
 
 // Function signature for encoding functions:
 #define BASE64_ENC_FUNCTION(arch)		\
@@ -27,6 +41,17 @@
 	int					\
 	base64_stream_decode_ ## arch		\
 	BASE64_DEC_PARAMS
+
+#define BASE64_DEC16_FUNCTION(arch)		\
+	int					\
+	base64_stream_decode16_ ## arch		\
+	BASE64_DEC_PARAMS
+
+// Function signature for decoding functions:
+#define BASE64_CVT_FUNCTION(arch)	\
+	void				\
+	base64_cvt_ ## arch	\
+	BASE64_CVT_PARAMS
 
 // Cast away unused variable, silence compiler:
 #define UNUSED(x)		((void)(x))
@@ -50,10 +75,18 @@
 						\
 	return -1;
 
+// Stub function when conversion arch unsupported:
+#define BASE64_CVT_STUB				\
+	UNUSED(src);				\
+	UNUSED(dst);				\
+	UNUSED(len);
+
 struct codec
 {
-	void (* enc) BASE64_ENC_PARAMS;
-	int  (* dec) BASE64_DEC_PARAMS;
+	void (* enc)   BASE64_ENC_PARAMS;
+	int  (* dec)   BASE64_DEC_PARAMS;
+	int  (* dec16) BASE64_DEC16_PARAMS;
+	void (* cvt)   BASE64_CVT_PARAMS;
 };
 
 // Define machine endianness. This is for GCC:

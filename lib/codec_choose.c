@@ -66,15 +66,22 @@
 #define BASE64_CODEC_FUNCS(arch)	\
 	BASE64_ENC_FUNCTION(arch);	\
 	BASE64_DEC_FUNCTION(arch);	\
+	BASE64_CVT_FUNCTION(arch);
 
 BASE64_CODEC_FUNCS(avx2)
+BASE64_DEC16_FUNCTION(avx2);
 BASE64_CODEC_FUNCS(neon32)
 BASE64_CODEC_FUNCS(neon64)
 BASE64_CODEC_FUNCS(plain)
+BASE64_DEC16_FUNCTION(plain);
 BASE64_CODEC_FUNCS(ssse3)
+BASE64_DEC16_FUNCTION(ssse3);
 BASE64_CODEC_FUNCS(sse41)
+BASE64_DEC16_FUNCTION(sse41);
 BASE64_CODEC_FUNCS(sse42)
+BASE64_DEC16_FUNCTION(sse42);
 BASE64_CODEC_FUNCS(avx)
+BASE64_DEC16_FUNCTION(avx);
 
 static bool
 codec_choose_forced (struct codec *codec, int flags)
@@ -86,44 +93,59 @@ codec_choose_forced (struct codec *codec, int flags)
 	if (!(flags & 0xFF)) {
 		return false;
 	}
+	codec->dec16 = NULL;
 	if (flags & BASE64_FORCE_AVX2) {
 		codec->enc = base64_stream_encode_avx2;
 		codec->dec = base64_stream_decode_avx2;
+		codec->dec16 = base64_stream_decode16_avx2;
+		codec->cvt = base64_cvt_avx2;
 		return true;
 	}
 	if (flags & BASE64_FORCE_NEON32) {
 		codec->enc = base64_stream_encode_neon32;
 		codec->dec = base64_stream_decode_neon32;
+		codec->cvt = base64_cvt_neon32;
 		return true;
 	}
 	if (flags & BASE64_FORCE_NEON64) {
 		codec->enc = base64_stream_encode_neon64;
 		codec->dec = base64_stream_decode_neon64;
+		codec->cvt = base64_cvt_neon64;
 		return true;
 	}
 	if (flags & BASE64_FORCE_PLAIN) {
 		codec->enc = base64_stream_encode_plain;
 		codec->dec = base64_stream_decode_plain;
+		codec->dec16 = base64_stream_decode16_plain;
+		codec->cvt = base64_cvt_plain;
 		return true;
 	}
 	if (flags & BASE64_FORCE_SSSE3) {
 		codec->enc = base64_stream_encode_ssse3;
 		codec->dec = base64_stream_decode_ssse3;
+		codec->dec16 = base64_stream_decode16_ssse3;
+		codec->cvt = base64_cvt_ssse3;
 		return true;
 	}
 	if (flags & BASE64_FORCE_SSE41) {
 		codec->enc = base64_stream_encode_sse41;
 		codec->dec = base64_stream_decode_sse41;
+		codec->dec16 = base64_stream_decode16_sse41;
+		codec->cvt = base64_cvt_sse41;
 		return true;
 	}
 	if (flags & BASE64_FORCE_SSE42) {
 		codec->enc = base64_stream_encode_sse42;
 		codec->dec = base64_stream_decode_sse42;
+		codec->dec16 = base64_stream_decode16_sse42;
+		codec->cvt = base64_cvt_sse42;
 		return true;
 	}
 	if (flags & BASE64_FORCE_AVX) {
 		codec->enc = base64_stream_encode_avx;
 		codec->dec = base64_stream_decode_avx;
+		codec->dec16 = base64_stream_decode16_avx;
+		codec->cvt = base64_cvt_avx;
 		return true;
 	}
 	return false;
@@ -141,9 +163,11 @@ codec_choose_arm (struct codec *codec)
 	#if defined(__aarch64__) && HAVE_NEON64
 	codec->enc = base64_stream_encode_neon64;
 	codec->dec = base64_stream_decode_neon64;
+	codec->cvt = base64_cvt_neon64;
 	#else
 	codec->enc = base64_stream_encode_neon32;
 	codec->dec = base64_stream_decode_neon32;
+	codec->cvt = base64_cvt_neon32;
 	#endif
 
 	return true;
@@ -192,6 +216,7 @@ codec_choose_x86 (struct codec *codec)
 				if (ebx & bit_AVX2) {
 					codec->enc = base64_stream_encode_avx2;
 					codec->dec = base64_stream_decode_avx2;
+					codec->cvt = base64_cvt_avx2;
 					return true;
 				}
 				#endif
@@ -199,6 +224,7 @@ codec_choose_x86 (struct codec *codec)
 				if (ecx & bit_AVX) {
 					codec->enc = base64_stream_encode_avx;
 					codec->dec = base64_stream_decode_avx;
+					codec->cvt = base64_cvt_avx;
 					return true;
 				}
 				#endif
@@ -214,6 +240,7 @@ codec_choose_x86 (struct codec *codec)
 		if (ecx & bit_SSE42) {
 			codec->enc = base64_stream_encode_sse42;
 			codec->dec = base64_stream_decode_sse42;
+			codec->cvt = base64_cvt_sse42;
 			return true;
 		}
 	}
@@ -226,6 +253,7 @@ codec_choose_x86 (struct codec *codec)
 		if (ecx & bit_SSE41) {
 			codec->enc = base64_stream_encode_sse41;
 			codec->dec = base64_stream_decode_sse41;
+			codec->cvt = base64_cvt_sse41;
 			return true;
 		}
 	}
@@ -238,6 +266,7 @@ codec_choose_x86 (struct codec *codec)
 		if (ecx & bit_SSSE3) {
 			codec->enc = base64_stream_encode_ssse3;
 			codec->dec = base64_stream_decode_ssse3;
+			codec->cvt = base64_cvt_ssse3;
 			return true;
 		}
 	}
@@ -267,4 +296,5 @@ codec_choose (struct codec *codec, int flags)
 	}
 	codec->enc = base64_stream_encode_plain;
 	codec->dec = base64_stream_decode_plain;
+	codec->cvt = base64_cvt_plain;
 }
