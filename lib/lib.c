@@ -10,7 +10,7 @@
 // These static function pointers are initialized once when the library is
 // first used, and remain in use for the remaining lifetime of the program.
 // The idea being that CPU features don't change at runtime.
-static struct codec codec = { NULL, NULL };
+static struct codec codec = { NULL, NULL, NULL, NULL };
 
 const uint8_t
 base64_table_enc[] =
