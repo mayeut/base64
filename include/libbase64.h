@@ -54,8 +54,29 @@ extern "C" {
 #define BASE64_FORCE_SSE42	(1 << 6)
 #define BASE64_FORCE_AVX	(1 << 7)
 #define BASE64_FORCE_AVX512	(1 << 8)
+#define BASE64_CPU_MASK         (0x7FF)
+
+#define BASE64_STARTED          (1 << 11)
+#define BASE64_CANONICAL        (1 << 12)
+#define BASE64_NO_PADDING       (1 << 13)
+#define BASE64_REJECT_NON_ASCII (1 << 14)
+
+#define BASE64_DECODE_SUCCESS 0
+#define BASE64_DECODE_ERROR_EXCESS_DATA 1
+#define BASE64_DECODE_ERROR_LEADING_PADDING 2
+#define BASE64_DECODE_ERROR_DISCONTINUOUS_PADDING 3
+#define BASE64_DECODE_ERROR_EXCESS_PADDING 4
+#define BASE64_DECODE_ERROR_INCORRECT_PADDING 5
+#define BASE64_DECODE_ERROR_INVALID_DATA 6
+#define BASE64_DECODE_ERROR_PADDING_NOT_ALLOWED 7
+#define BASE64_DECODE_ERROR_PADDING_BITS_NOT_ALLOWED 8
+#define BASE64_DECODE_ERROR_NON_ASCII 9
 
 struct base64_state {
+	char const* ignorechars;
+	size_t ignorecharslen;
+	unsigned char ignorecache[32];
+	int error;
 	int eof;
 	int bytes;
 	int flags;
@@ -114,6 +135,8 @@ int BASE64_EXPORT base64_decode
 	, char			*out
 	, size_t		*outlen
 	, int			 flags
+	, char const            *ignorechars
+	, size_t                 ignorecharslen
 	) ;
 
 /* Call this before calling base64_stream_decode() to init the state. See above
@@ -121,6 +144,8 @@ int BASE64_EXPORT base64_decode
 void BASE64_EXPORT base64_stream_decode_init
 	( struct base64_state	*state
 	, int			 flags
+	, char const            *ignorechars
+	, size_t                 ignorecharslen
 	) ;
 
 /* Decodes the block of data of given length at `src`, into the buffer at
@@ -137,6 +162,10 @@ int BASE64_EXPORT base64_stream_decode
 	, size_t		 srclen
 	, char			*out
 	, size_t		*outlen
+	) ;
+
+int BASE64_EXPORT base64_stream_decode_final
+	( struct base64_state	*state
 	) ;
 
 #ifdef __cplusplus

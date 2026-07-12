@@ -408,7 +408,7 @@ decode (const struct config *config, struct buffer *buf)
 	struct base64_state state;
 
 	// Initialize the decoder's state structure.
-	base64_stream_decode_init(&state, 0);
+	base64_stream_decode_init(&state, 0, NULL, 0);
 
 	// Read encoded data into the buffer. Use the smallest buffer size to
 	// be on the safe side: the decoded output will fit the raw buffer.

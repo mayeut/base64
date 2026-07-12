@@ -36,5 +36,5 @@ codec_supported (size_t index)
 		return 0;
 	}
 	int flags = 1 << index;
-	return (base64_decode(a, strlen(a), b, &outlen, flags) != -1) ? flags : 0;
+	return (base64_decode(a, strlen(a), b, &outlen, flags, NULL, 0) != -1) ? flags : 0;
 }

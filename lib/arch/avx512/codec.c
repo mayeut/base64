@@ -9,6 +9,7 @@
 #include "../../env.h"
 
 #if HAVE_AVX512
+#include "../../validation_helpers.h"
 #include <immintrin.h>
 
 #include "../avx2/dec_reshuffle.c"

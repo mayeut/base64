@@ -60,7 +60,8 @@
 // Almost end-of-file when waiting for the last '=' character:
 #define BASE64_AEOF 1
 // End-of-file when stream end has been reached or invalid input provided:
-#define BASE64_EOF 2
+#define BASE64_EOF  2
+#define BASE64_EOF2 3
 
 // GCC 7 defaults to issuing a warning for fallthrough in switch statements,
 // unless the fallthrough cases are marked with an attribute. As we use

@@ -103,7 +103,7 @@ base64_decode_openmp
 			last_len = srclen - num_threads * len;
 
 			// Init the stream reader:
-			base64_stream_decode_init(&state, flags);
+			base64_stream_decode_init(&state, flags, NULL, 0);
 
 			initial_state = state;
 		}

@@ -18,13 +18,14 @@ void
 base64_stream_encode_init (struct base64_state *state, int flags)
 {
 	// If any of the codec flags are set, redo choice:
-	if (codec.enc == NULL || flags & 0xFF) {
-		codec_choose(&codec, flags);
+	if (codec.enc == NULL || flags & BASE64_CPU_MASK) {
+		codec_choose(&codec, flags & BASE64_CPU_MASK);
 	}
 	state->eof = 0;
 	state->bytes = 0;
 	state->carry = 0;
 	state->flags = flags;
+	state->ignorechars = NULL;
 }
 
 void
@@ -50,6 +51,10 @@ base64_stream_encode_final
 
 	if (state->bytes == 1) {
 		*o++ = base64_table_enc_6bit[state->carry];
+		if (state->flags & BASE64_NO_PADDING) {
+			*outlen = 1;
+			return;
+		}
 		*o++ = '=';
 		*o++ = '=';
 		*outlen = 3;
@@ -57,6 +62,10 @@ base64_stream_encode_final
 	}
 	if (state->bytes == 2) {
 		*o++ = base64_table_enc_6bit[state->carry];
+		if (state->flags & BASE64_NO_PADDING) {
+			*outlen = 1;
+			return;
+		}
 		*o++ = '=';
 		*outlen = 2;
 		return;
@@ -65,16 +74,22 @@ base64_stream_encode_final
 }
 
 void
-base64_stream_decode_init (struct base64_state *state, int flags)
+base64_stream_decode_init (struct base64_state *state, int flags, char const *ignorechars, size_t ignorecharslen)
 {
 	// If any of the codec flags are set, redo choice:
-	if (codec.dec == NULL || flags & 0xFFFF) {
-		codec_choose(&codec, flags);
+	if (codec.dec == NULL || flags & BASE64_CPU_MASK) {
+		codec_choose(&codec, flags & BASE64_CPU_MASK);
 	}
+	state->error = 0;
 	state->eof = 0;
 	state->bytes = 0;
 	state->carry = 0;
 	state->flags = flags;
+	state->ignorechars = ignorechars;
+	state->ignorecharslen = (ignorechars != NULL) ? ignorecharslen : 0;
+	for (size_t i = 0; i < (sizeof(state->ignorecache) / sizeof(state->ignorecache[0])); ++i) {
+		state->ignorecache[i] = 0;
+	}
 }
 
 int
@@ -88,6 +103,35 @@ base64_stream_decode
 {
 	return codec.dec(state, src, srclen, out, outlen);
 }
+
+int
+base64_stream_decode_final
+	( struct base64_state	*state
+	)
+{
+	if (state->error) {
+		return 0;
+	}
+	if ((state->flags & BASE64_CANONICAL) && state->carry) {
+		state->error = BASE64_DECODE_ERROR_PADDING_BITS_NOT_ALLOWED;
+		return 0;
+	}
+	if (state->bytes == 0) {
+		return 1;
+	}
+	if (state->flags & BASE64_NO_PADDING) {
+		switch (state->bytes) {
+			case 2:
+			case 3:
+				return 1;
+			default:
+				break;
+		}
+	}
+	state->error = BASE64_DECODE_ERROR_INCORRECT_PADDING;
+	return 0;
+}
+
 
 #ifdef _OPENMP
 
@@ -139,26 +183,28 @@ base64_decode
 	, char		*out
 	, size_t	*outlen
 	, int		 flags
+	, char const    *ignorechars
+	, size_t         ignorecharslen
 	)
 {
 	int ret;
 	struct base64_state state;
 
 	#ifdef _OPENMP
-	if (srclen >= OMP_THRESHOLD) {
+	if ((srclen >= OMP_THRESHOLD) && (ignorecharslen == 0) && ((flags & ~BASE64_CPU_MASK) == 0)) {
 		return base64_decode_openmp(src, srclen, out, outlen, flags);
 	}
 	#endif
 
 	// Init the stream reader:
-	base64_stream_decode_init(&state, flags);
+	base64_stream_decode_init(&state, flags, ignorechars, ignorecharslen);
 
 	// Feed the whole string to the stream reader:
 	ret = base64_stream_decode(&state, src, srclen, out, outlen);
 
 	// If when decoding a whole block, we're still waiting for input then fail:
-	if (ret && (state.bytes == 0)) {
-		return ret;
+	if (ret > 0) {
+		ret = base64_stream_decode_final(&state);
 	}
-	return 0;
+	return ret;
 }

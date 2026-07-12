@@ -9,6 +9,7 @@
 #include "../../env.h"
 
 #if HAVE_SSE42
+#include "../../validation_helpers.h"
 #include <nmmintrin.h>
 
 // Only enable inline assembly on supported compilers and on 64-bit CPUs.

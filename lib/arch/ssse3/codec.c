@@ -9,6 +9,7 @@
 #include "../../env.h"
 
 #if HAVE_SSSE3
+#include "../../validation_helpers.h"
 #include <tmmintrin.h>
 
 // Only enable inline assembly on supported compilers and on 64-bit CPUs.

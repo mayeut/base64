@@ -9,6 +9,7 @@
 #include "../../env.h"
 
 #if HAVE_NEON64
+#include "../../validation_helpers.h"
 #include <arm_neon.h>
 
 // Only enable inline assembly on supported compilers.

@@ -15,6 +15,7 @@
 #endif
 
 #ifdef BASE64_USE_NEON32
+#include "../../validation_helpers.h"
 #include <arm_neon.h>
 
 // Only enable inline assembly on supported compilers.

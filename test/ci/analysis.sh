@@ -31,6 +31,7 @@ for USE_ASSEMBLY in 0 1; do
 	fi
 
 	echo "::group::valgrind (USE_ASSEMBLY=${USE_ASSEMBLY})"
+	export CFLAGS="-g"
 	make clean
 	make
 	make -C test valgrind
